@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>AI APP QUEST</title>
+<style>
+  :root{
+    --bg: #0b0e14;
+    --surface: #161b26;
+    --surface-2: #1f2635;
+    --border: #2a3244;
+    --text: #f4f6fb;
+    --text-dim: #a7b0c2;
+    --accent1: #7c5cfc;
+    --accent2: #4f8cff;
+    --accent-grad: linear-gradient(135deg, var(--accent1), var(--accent2));
+    --good: #35d399;
+    --warn: #ffb84d;
+    --radius: 18px;
+  }
+  *{ box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body{
+    margin:0; padding:0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    width:100%; min-height:100%;
+  }
+  #app{ max-width: 720px; margin: 0 auto; padding: 20px 20px 60px; min-height:100vh; }
+
+  /* progress */
+  .topbar{ display:flex; align-items:center; gap:12px; margin-bottom:18px; }
+  .backbtn{
+    background: var(--surface); border:1px solid var(--border); color: var(--text-dim);
+    border-radius: 12px; padding: 10px 14px; font-size:15px; font-weight:600; min-height:44px;
+  }
+  .progress-wrap{ flex:1; }
+  .progress-label{ font-size:13px; color: var(--text-dim); font-weight:700; letter-spacing:.04em; margin-bottom:6px; }
+  .progress-track{ height:8px; border-radius:999px; background: var(--surface-2); overflow:hidden; }
+  .progress-fill{ height:100%; background: var(--accent-grad); border-radius:999px; transition: width .3s ease; }
+
+  h1{ font-size: clamp(24px, 6vw, 32px); line-height:1.35; margin: 6px 0 8px; font-weight:800; }
+  h2{ font-size: clamp(13px, 3.4vw, 15px); text-transform:uppercase; letter-spacing:.08em; color: var(--accent2); font-weight:800; margin: 0 0 6px; }
+  p.sub{ color: var(--text-dim); font-size: clamp(15px,3.8vw,17px); line-height:1.7; margin: 0 0 18px; }
+
+  .card{ background: var(--surface); border:1px solid var(--border); border-radius: var(--radius); padding: 18px; margin-bottom:14px; }
+
+  .big-btn{
+    display:block; width:100%; text-align:center; border:none; cursor:pointer;
+    background: var(--accent-grad); color:#fff; font-weight:800; font-size:18px;
+    padding: 18px 20px; border-radius: 16px; min-height:58px;
+    box-shadow: 0 8px 24px rgba(124,92,252,.35);
+  }
+  .big-btn:active{ transform: scale(.98); }
+  .big-btn.secondary{
+    background: var(--surface-2); color: var(--text); box-shadow:none; border:1px solid var(--border);
+  }
+  .big-btn.ghost{
+    background: transparent; color: var(--accent2); border:1px solid var(--accent2); box-shadow:none;
+  }
+  .big-btn[disabled]{ opacity:.4; pointer-events:none; }
+  .btn-row{ display:flex; gap:10px; flex-wrap:wrap; }
+  .btn-row .big-btn{ flex:1; min-width: 140px; }
+
+  textarea, input[type=text]{
+    width:100%; background: var(--surface-2); border:1px solid var(--border); color: var(--text);
+    border-radius: 14px; padding: 14px 16px; font-size:16px; font-family:inherit;
+    min-height: 54px; resize: vertical;
+  }
+  textarea:focus, input[type=text]:focus{ outline: 2px solid var(--accent2); }
+  label.field-label{ display:block; font-weight:700; font-size:15px; margin: 16px 0 8px; }
+  label.field-label:first-of-type{ margin-top:0; }
+
+  .chip-row{ display:flex; gap:8px; flex-wrap:wrap; }
+  .chip{
+    background: var(--surface-2); border:1px solid var(--border); color: var(--text);
+    padding: 12px 18px; border-radius: 999px; font-size:15px; font-weight:700; min-height:44px;
+  }
+  .chip.selected{ background: var(--accent-grad); border-color: transparent; color:#fff; }
+
+  .cat-title{ font-size:13px; font-weight:800; letter-spacing:.08em; color: var(--text-dim); margin: 18px 0 8px; }
+  .card-grid{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+  .idea-card{
+    background: var(--surface); border:2px solid var(--border); border-radius:14px;
+    padding: 14px 10px; text-align:center; font-weight:700; font-size:15px; min-height:56px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .idea-card.selected{ border-color: var(--accent2); background: rgba(79,140,255,.12); color:#fff; }
+
+  .flow-step{
+    background: var(--surface-2); border-radius: 14px; padding: 14px 16px; font-weight:700;
+    font-size: clamp(15px,4vw,17px); text-align:center;
+  }
+  .flow-arrow{ text-align:center; color: var(--text-dim); font-size:20px; margin:4px 0; }
+
+  .prompt-box{
+    background: var(--surface-2); border:1px solid var(--border); border-radius:14px; padding:16px;
+    white-space: pre-wrap; font-size:15px; line-height:1.7; color:var(--text);
+  }
+  .copied-flag{ color: var(--good); font-weight:800; font-size:14px; margin-top:8px; display:none; }
+  .copied-flag.show{ display:block; }
+
+  .ai-links{ display:flex; gap:10px; margin-top:10px; flex-wrap:wrap; }
+  .ai-links a{
+    flex:1; min-width:100px; text-align:center; padding:12px; border-radius:12px;
+    background: var(--surface-2); border:1px solid var(--border); color: var(--text);
+    font-weight:700; text-decoration:none; font-size:14px; min-height:44px;
+    display:flex; align-items:center; justify-content:center;
+  }
+
+  .improve-grid{ display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
+  .improve-card{
+    background: var(--surface); border:2px solid var(--border); border-radius:16px; padding:16px 10px;
+    text-align:center; cursor:pointer;
+  }
+  .improve-card.selected{ border-color: var(--accent1); background: rgba(124,92,252,.12); }
+  .improve-card .icon{ font-size: 30px; }
+  .improve-card .title{ font-weight:800; font-size:14px; margin-top:6px; }
+
+  .badge{ display:inline-block; background: var(--surface-2); color: var(--text-dim); font-size:12px; font-weight:700; padding:4px 10px; border-radius:999px; margin-bottom:10px; }
+
+  .complete-hero{ text-align:center; padding: 30px 10px; }
+  .complete-hero .big{ font-size: clamp(28px,8vw,38px); font-weight:900; background: var(--accent-grad); -webkit-background-clip:text; background-clip:text; color:transparent; }
+
+  .community-list{ display:flex; flex-direction:column; gap:10px; margin-top:12px; }
+  .community-item{ background: var(--surface-2); border:1px solid var(--border); border-radius:12px; padding:12px 14px; }
+  .community-item .name{ font-weight:800; }
+  .community-item .desc{ color: var(--text-dim); font-size:14px; margin-top:2px; }
+
+  a{ color: var(--accent2); }
+  .footer-link{ text-align:center; margin-top:18px; }
+  .footer-link button{ background:none; border:none; color: var(--text-dim); text-decoration:underline; font-size:14px; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+/* ============================================================
+   AI を開くリンク先。学校の利用環境に合わせてここを変更してください。
+   ============================================================ */
+const AI_LINKS = {
+  gemini: "https://gemini.google.com",
+  chatgpt: "https://chat.openai.com",
+  claude: "https://claude.ai"
+};
+
+const STORAGE_KEY = "ai_app_quest_state_v1";
+
+const SCREENS = ["start","see","idea","define","build","improve","share"];
+const QUEST_NUM = { see:1, idea:2, define:3, build:4, improve:5, share:6 };
+
+const IDEA_CATEGORIES = {
+  SCHOOL: ["席替え","グループ分け","忘れ物チェック","当番決め","学習記録","時間割管理"],
+  FUN: ["クイズ","ガチャ","性格診断","ルーレット","ミニゲーム","ランキング"],
+  LIFE: ["習慣チェック","持ち物管理","今日何する？","タスク管理","おすすめ決定","記録アプリ"]
+};
+
+const Q2_OPTIONS = ["自分","友達","クラス","先生","家族","その他"];
+
+const defaultState = {
+  screen: "start",
+  idea: "",
+  ideaFree: "",
+  q1: "",
+  q2: "",
+  q3: "",
+  definePrompt: "",
+  buildStatus: "",
+  improveInputs: { function: "", bug: "" },
+  improvePrompts: {},
+  shareStatus: "",
+  community: []
+};
+
+let state = loadState();
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return structuredCloneSafe(defaultState);
+    const saved = JSON.parse(raw);
+    return Object.assign(structuredCloneSafe(defaultState), saved);
+  }catch(e){
+    return structuredCloneSafe(defaultState);
+  }
+}
+function structuredCloneSafe(obj){ return JSON.parse(JSON.stringify(obj)); }
+function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+function goTo(screen){ state.screen = screen; saveState(); render(); window.scrollTo(0,0); }
+function update(patch){ Object.assign(state, patch); saveState(); render(); }
+
+function resetAll(){
+  const community = state.community;
+  state = structuredCloneSafe(defaultState);
+  state.community = community;
+  saveState();
+  render();
+}
+
+function copyText(text, flagEl){
+  const done = () => {
+    if(flagEl){
+      flagEl.classList.add("show");
+      setTimeout(()=>flagEl.classList.remove("show"), 2000);
+    }
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(done).catch(()=>fallbackCopy(text, done));
+  }else{
+    fallbackCopy(text, done);
+  }
+}
+function fallbackCopy(text, done){
+  const ta = document.createElement("textarea");
+  ta.value = text; ta.style.position="fixed"; ta.style.opacity="0";
+  document.body.appendChild(ta); ta.focus(); ta.select();
+  try{ document.execCommand("copy"); }catch(e){}
+  document.body.removeChild(ta);
+  done();
+}
+
+function aiLinksHtml(){
+  return `
+    <div class="ai-links">
+      <a href="${AI_LINKS.gemini}" target="_blank" rel="noopener">Geminiを開く</a>
+      <a href="${AI_LINKS.chatgpt}" target="_blank" rel="noopener">ChatGPTを開く</a>
+      <a href="${AI_LINKS.claude}" target="_blank" rel="noopener">Claudeを開く</a>
+    </div>
+    <p style="color:var(--text-dim); font-size:12px; margin-top:8px; line-height:1.6;">
+      ※Geminiは学校のネットワークの都合でブラウザでは開けないことがあります。開かない場合は、ホーム画面からGeminiアプリを直接開いて、コピーした文章を貼り付けてください。
+    </p>
+  `;
+}
+
+function progressBar(){
+  const n = QUEST_NUM[state.screen];
+  if(!n) return "";
+  const pct = Math.round((n/6)*100);
+  return `
+    <div class="topbar">
+      <button class="backbtn" onclick="goBack()">← もどる</button>
+      <div class="progress-wrap">
+        <div class="progress-label">QUEST ${n} / 6</div>
+        <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
+      </div>
+    </div>
+  `;
+}
+function goBack(){
+  const idx = SCREENS.indexOf(state.screen);
+  if(idx > 0) goTo(SCREENS[idx-1]);
+}
+
+/* ---------------- screens ---------------- */
+
+function screenStart(){
+  return `
+    <div style="padding-top:12%;">
+      <div class="badge">AI APP QUEST</div>
+      <h1>AIと一緒に<br>アプリを作ってみよう。</h1>
+      <p class="sub">コードを書けなくてもOK。<br>今日は"AIとどう考えるか"を体験します。</p>
+      <button class="big-btn" onclick="goTo('see')">QUESTをはじめる</button>
+    </div>
+  `;
+}
+
+function screenSee(){
+  const steps = ["席替えを簡単にしたい","AIに相談する","必要な機能を考える","まず作ってみる","動かして直す"];
+  return `
+    ${progressBar()}
+    <h2>QUEST 1</h2>
+    <h1>AIとアプリを作る流れを見てみよう</h1>
+    <div class="card">
+      ${steps.map((s,i)=>`
+        <div class="flow-step">${s}</div>
+        ${i<steps.length-1 ? '<div class="flow-arrow">↓</div>' : ''}
+      `).join("")}
+    </div>
+    <div class="card" style="text-align:center; font-weight:800; font-size:18px;">
+      課題 → 対話 → 試作 → 改善
+    </div>
+    <p class="sub">
+      今日覚えてほしいのは、コードではありません。<br>
+      AIに答えを出してもらうのではなく、一緒に考えながら形にしていきます。
+    </p>
+    <button class="big-btn" onclick="goTo('idea')">自分も作ってみる</button>
+  `;
+}
+
+function ideaCardHtml(text){
+  const selected = state.idea === text;
+  const safe = text.replace(/'/g,"\\'");
+  return `<div class="idea-card ${selected?'selected':''}" onclick="selectIdea('${safe}')">${text}</div>`;
+}
+function selectIdea(text){
+  update({ idea: text, ideaFree: "" });
+}
+function onFreeIdeaInput(val){
+  state.ideaFree = val; state.idea = ""; saveState();
+  document.getElementById("ideaNextBtn").disabled = val.trim().length === 0;
+  document.querySelectorAll(".idea-card").forEach(el=>el.classList.remove("selected"));
+}
+
+function screenIdea(){
+  const canProceed = state.idea.trim().length > 0 || state.ideaFree.trim().length > 0;
+  return `
+    ${progressBar()}
+    <h2>QUEST 2</h2>
+    <h1>何を作る？</h1>
+    <p class="sub">すごいアプリを考えなくてOK。<br>ちょっと面倒なこと、ちょっと楽しくしたいことを選んでみよう。</p>
+
+    <div class="cat-title">SCHOOL</div>
+    <div class="card-grid">${IDEA_CATEGORIES.SCHOOL.map(ideaCardHtml).join("")}</div>
+
+    <div class="cat-title">FUN</div>
+    <div class="card-grid">${IDEA_CATEGORIES.FUN.map(ideaCardHtml).join("")}</div>
+
+    <div class="cat-title">LIFE</div>
+    <div class="card-grid">${IDEA_CATEGORIES.LIFE.map(ideaCardHtml).join("")}</div>
+
+    <div class="cat-title">ORIGINAL</div>
+    <div class="card">
+      <label class="field-label">自分で考える</label>
+      <textarea id="ideaFreeInput" placeholder="例：今日の昼ごはんを決めてくれるアプリ" oninput="onFreeIdeaInput(this.value)">${state.ideaFree}</textarea>
+    </div>
+
+    <button id="ideaNextBtn" class="big-btn" ${canProceed?'':'disabled'} onclick="goTo('define')">このアイデアで進む</button>
+  `;
+}
+
+function q2ChipHtml(opt){
+  const selected = state.q2 === opt;
+  return `<button class="chip ${selected?'selected':''}" onclick="selectQ2('${opt}')">${opt}</button>`;
+}
+function selectQ2(opt){ update({ q2: opt }); }
+function onQ1Input(v){ state.q1=v; saveState(); }
+function onQ3Input(v){ state.q3=v; saveState(); }
+
+function buildDefinePrompt(){
+  const idea = state.idea || state.ideaFree;
+  return `私は高校生です。
+
+「${state.q1}」
+という課題を解決するWebアプリを作りたいです。
+（作りたいものの方向性：${idea}）
+
+使う人：
+${state.q2}
+
+やりたいこと：
+${state.q3}
+
+いきなりコードを書くのではなく、
+まずこのアプリについて、
+
+・誰が使うのか
+・どんな場面で使うのか
+・必要な機能
+・最初に作る最小限の機能
+
+を整理してください。
+
+私に質問しながら、一緒に考えてください。`;
+}
+
+function generateDefine(){
+  const prompt = buildDefinePrompt();
+  update({ definePrompt: prompt });
+}
+
+function screenDefine(){
+  const canGenerate = state.q1.trim() && state.q2 && state.q3.trim();
+  return `
+    ${progressBar()}
+    <h2>QUEST 3</h2>
+    <h1>AIに相談しよう</h1>
+
+    <div class="card">
+      <label class="field-label">Q1. 何を解決したい？</label>
+      <input type="text" value="${escapeAttr(state.q1)}" placeholder="例：班分けを毎回考えるのが面倒" oninput="onQ1Input(this.value)">
+
+      <label class="field-label">Q2. 誰が使う？</label>
+      <div class="chip-row">${Q2_OPTIONS.map(q2ChipHtml).join("")}</div>
+
+      <label class="field-label">Q3. どんなことができると嬉しい？</label>
+      <input type="text" value="${escapeAttr(state.q3)}" placeholder="例：名前を入力したらランダムに4人組にしてほしい" oninput="onQ3Input(this.value)">
+    </div>
+
+    <button class="big-btn" ${canGenerate?'':'disabled'} onclick="generateDefine()">AIに相談する文章をつくる</button>
+
+    ${state.definePrompt ? `
+      <div class="card" style="margin-top:16px;">
+        <div class="prompt-box">${escapeHtml(state.definePrompt)}</div>
+        <button class="big-btn secondary" style="margin-top:12px;" onclick="copyText(document.getElementById('definePromptText').textContent, document.getElementById('defineCopiedFlag'))">コピーする</button>
+        <span id="definePromptText" style="display:none;">${escapeHtml(state.definePrompt)}</span>
+        <div id="defineCopiedFlag" class="copied-flag">コピーしました！</div>
+        ${aiLinksHtml()}
+      </div>
+      <button class="big-btn" style="margin-top:16px;" onclick="goTo('build')">次のQUESTへ</button>
+    ` : ""}
+  `;
+}
+
+const BUILD_PROMPT = `今整理した内容をもとに、
+実際に使えるWebアプリを作ってください。
+
+最初は最低限の機能だけで構いません。
+
+iPadのSafariで使います。
+
+・画面はシンプル
+・ボタンは大きめ
+・タッチ操作しやすい
+・スマートフォンやタブレット対応
+・日本語表示
+
+にしてください。
+
+まず動くものを作ってください。`;
+
+function setBuildStatus(v){ update({ buildStatus: v }); goTo("improve"); }
+
+function screenBuild(){
+  return `
+    ${progressBar()}
+    <h2>QUEST 4</h2>
+    <h1>まず動かしてみよう</h1>
+    <p class="sub">完成させなくてOK。<br>まず動くものを1つ作ってみよう。</p>
+
+    <div class="card">
+      <div class="prompt-box">${escapeHtml(BUILD_PROMPT)}</div>
+      <button class="big-btn secondary" style="margin-top:12px;" onclick="copyText(document.getElementById('buildPromptText').textContent, document.getElementById('buildCopiedFlag'))">コピーする</button>
+      <span id="buildPromptText" style="display:none;">${escapeHtml(BUILD_PROMPT)}</span>
+      <div id="buildCopiedFlag" class="copied-flag">コピーしました！</div>
+      ${aiLinksHtml()}
+    </div>
+
+    <div class="btn-row">
+      <button class="big-btn" onclick="setBuildStatus('done')">✅ アプリができた</button>
+      <button class="big-btn secondary" onclick="setBuildStatus('partial')">🚧 途中までできた</button>
+    </div>
+  `;
+}
+
+const IMPROVE_CARDS = [
+  { key:"look", icon:"🎨", title:"見た目をよくしたい", needInput:false,
+    prompt: "今の機能はそのままで、iPadで使いやすく、もう少し見やすく楽しいデザインにしてください。" },
+  { key:"function", icon:"➕", title:"機能を増やしたい", needInput:true,
+    inputLabel:"何ができるようにしたい？", placeholder:"例：結果を保存できるようにしたい",
+    buildPrompt:(v)=>`今のアプリに『${v}』という機能を追加してください。現在の機能はできるだけ残してください。` },
+  { key:"bug", icon:"🐛", title:"うまく動かない", needInput:true,
+    inputLabel:"何が起きていますか？", placeholder:"例：ボタンを押しても反応しない",
+    buildPrompt:(v)=>`今のアプリで、次の問題が起きています。\n\n${v}\n\n原因を考えて、修正方法を提案し、必要であればコードも修正してください。` },
+  { key:"advice", icon:"💡", title:"AIに改善案を聞く", needInput:false,
+    prompt: "このアプリを高校生が使うとしたら、もっと使いやすく・楽しくするために改善できるところを3つ提案してください。その中で一番簡単に実装できる改善から教えてください。" }
+];
+
+let activeImproveCard = null;
+
+function selectImprove(key){
+  activeImproveCard = (activeImproveCard === key) ? null : key;
+  render();
+}
+function onImproveInput(key, val){
+  state.improveInputs[key] = val; saveState();
+}
+function generateImprovePrompt(key){
+  const card = IMPROVE_CARDS.find(c=>c.key===key);
+  const text = card.needInput ? card.buildPrompt(state.improveInputs[key]||"") : card.prompt;
+  state.improvePrompts[key] = text; saveState(); render();
+}
+
+function screenImprove(){
+  const cardsHtml = IMPROVE_CARDS.map(c => `
+    <div class="improve-card ${activeImproveCard===c.key?'selected':''}" onclick="selectImprove('${c.key}')">
+      <div class="icon">${c.icon}</div>
+      <div class="title">${c.title}</div>
+    </div>
+  `).join("");
+
+  let detail = "";
+  if(activeImproveCard){
+    const c = IMPROVE_CARDS.find(x=>x.key===activeImproveCard);
+    const generated = state.improvePrompts[c.key];
+    detail = `
+      <div class="card" style="margin-top:14px;">
+        ${c.needInput ? `
+          <label class="field-label">${c.inputLabel}</label>
+          <input type="text" value="${escapeAttr(state.improveInputs[c.key]||'')}" placeholder="${c.placeholder}" oninput="onImproveInput('${c.key}', this.value)">
+          <button class="big-btn" style="margin-top:12px;" onclick="generateImprovePrompt('${c.key}')">このプロンプトをつくる</button>
+        ` : `
+          <button class="big-btn" onclick="generateImprovePrompt('${c.key}')">このプロンプトをつくる</button>
+        `}
+        ${generated ? `
+          <div class="prompt-box" style="margin-top:12px;">${escapeHtml(generated)}</div>
+          <button class="big-btn secondary" style="margin-top:12px;" onclick="copyText(document.getElementById('improvePromptText_${c.key}').textContent, document.getElementById('improveCopiedFlag_${c.key}'))">コピーする</button>
+          <span id="improvePromptText_${c.key}" style="display:none;">${escapeHtml(generated)}</span>
+          <div id="improveCopiedFlag_${c.key}" class="copied-flag">コピーしました！</div>
+          ${aiLinksHtml()}
+        ` : ""}
+      </div>
+    `;
+  }
+
+  return `
+    ${progressBar()}
+    <h2>QUEST 5</h2>
+    <h1>もっとよくしよう</h1>
+    <p class="sub">AIアプリ開発は、一回で完成させるものではありません。<br>気になったところをAIに伝えて、少しずつ直していきます。</p>
+
+    <div class="improve-grid">${cardsHtml}</div>
+    ${detail}
+
+    <button class="big-btn" style="margin-top:20px;" onclick="goTo('share')">次のQUESTへ</button>
+  `;
+}
+
+function setShareStatus(v){ update({ shareStatus: v }); }
+
+function submitCommunity(){
+  const name = document.getElementById("communityName").value.trim();
+  const desc = document.getElementById("communityDesc").value.trim();
+  if(!name || !desc) return;
+  state.community.push({ name, desc });
+  saveState();
+  document.getElementById("communityName").value = "";
+  document.getElementById("communityDesc").value = "";
+  render();
+}
+
+function screenShare(){
+  if(!state.shareStatus){
+    return `
+      ${progressBar()}
+      <h2>FINAL QUEST</h2>
+      <h1>今日どこまでできた？</h1>
+      <div class="btn-row" style="flex-direction:column;">
+        <button class="big-btn" onclick="setShareStatus('done')">🎉 動いた！</button>
+        <button class="big-btn secondary" onclick="setShareStatus('partial')">🚧 途中までできた！</button>
+        <button class="big-btn secondary" onclick="setShareStatus('idea')">💡 アイデア・設計までできた！</button>
+      </div>
+    `;
+  }
+
+  return `
+    ${progressBar()}
+    <div class="complete-hero">
+      <div class="big">QUEST COMPLETE！</div>
+      <p class="sub" style="margin-top:14px;">
+        45分前にはなかったものが、今ここにあります。<br>
+        隣の人に見せてみよう。
+      </p>
+    </div>
+
+    <div class="card">
+      <label class="field-label">アプリ名</label>
+      <input type="text" id="communityName" placeholder="例：ランダム班分けくん">
+      <label class="field-label">一言で説明</label>
+      <input type="text" id="communityDesc" placeholder="例：名前を入れると、自動で4人組に分けてくれる">
+      <button class="big-btn" style="margin-top:14px;" onclick="submitCommunity()">みんなのアイデアに送る</button>
+    </div>
+
+    ${state.community.length ? `
+      <div class="cat-title">みんなのアイデア</div>
+      <div class="community-list">
+        ${state.community.slice().reverse().map(c => `
+          <div class="community-item">
+            <div class="name">${escapeHtml(c.name)}</div>
+            <div class="desc">${escapeHtml(c.desc)}</div>
+          </div>
+        `).join("")}
+      </div>
+    ` : ""}
+
+    <div class="footer-link">
+      <button onclick="if(confirm('最初からやり直しますか？')) resetAll()">もう一度QUESTに挑戦する</button>
+    </div>
+  `;
+}
+
+/* ---------------- utils ---------------- */
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, s => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  }[s]));
+}
+function escapeAttr(str){ return escapeHtml(str); }
+
+/* ---------------- render ---------------- */
+function render(){
+  const app = document.getElementById("app");
+  let html = "";
+  switch(state.screen){
+    case "start": html = screenStart(); break;
+    case "see": html = screenSee(); break;
+    case "idea": html = screenIdea(); break;
+    case "define": html = screenDefine(); break;
+    case "build": html = screenBuild(); break;
+    case "improve": html = screenImprove(); break;
+    case "share": html = screenShare(); break;
+    default: html = screenStart();
+  }
+  app.innerHTML = html;
+}
+
+render();
+</script>
+</body>
+</html>
