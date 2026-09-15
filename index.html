@@ -25,8 +25,26 @@
     font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
     -webkit-font-smoothing: antialiased;
     width:100%; min-height:100%;
+    overflow-x: hidden;
   }
-  #app{ max-width: 720px; margin: 0 auto; padding: 20px 20px 60px; min-height:100vh; }
+
+  /* 背景の浮遊ブロブ（装飾のみ、操作には影響しない） */
+  .blob{ position: fixed; border-radius: 50%; filter: blur(70px); opacity:.30; z-index:0; pointer-events:none; }
+  .blob1{ width:280px; height:280px; background: var(--accent1); top:-70px; left:-70px; animation: floatBlob 16s ease-in-out infinite; }
+  .blob2{ width:320px; height:320px; background: var(--accent2); bottom:-90px; right:-80px; animation: floatBlob 20s ease-in-out infinite reverse; }
+  @keyframes floatBlob{
+    0%,100%{ transform: translate(0,0) scale(1); }
+    33%{ transform: translate(24px,-30px) scale(1.08); }
+    66%{ transform: translate(-18px,18px) scale(0.94); }
+  }
+
+  #app{ position:relative; z-index:1; max-width: 720px; margin: 0 auto; padding: 20px 20px 60px; min-height:100vh; }
+
+  @keyframes screenIn{
+    from{ opacity:0; transform: translateY(14px); }
+    to{ opacity:1; transform: translateY(0); }
+  }
+  .screen{ animation: screenIn .45s ease; }
 
   /* progress */
   .topbar{ display:flex; align-items:center; gap:12px; margin-bottom:18px; }
@@ -45,20 +63,28 @@
 
   .card{ background: var(--surface); border:1px solid var(--border); border-radius: var(--radius); padding: 18px; margin-bottom:14px; }
 
+  @keyframes pulseGlow{
+    0%,100%{ box-shadow: 0 8px 24px rgba(255,111,145,.35); }
+    50%{ box-shadow: 0 10px 32px rgba(255,111,145,.6); }
+  }
   .big-btn{
     display:block; width:100%; text-align:center; border:none; cursor:pointer;
     background: var(--accent-grad); color:#fff; font-weight:800; font-size:18px;
     padding: 18px 20px; border-radius: 16px; min-height:58px;
     box-shadow: 0 8px 24px rgba(255,111,145,.35);
+    transition: transform .15s ease;
+    animation: pulseGlow 2.6s ease-in-out infinite;
   }
-  .big-btn:active{ transform: scale(.98); }
+  .big-btn:active{ transform: scale(.97); }
   .big-btn.secondary{
     background: var(--surface-2); color: var(--text); box-shadow:none; border:1px solid var(--border);
+    animation: none;
   }
   .big-btn.ghost{
     background: transparent; color: var(--accent2); border:1px solid var(--accent2); box-shadow:none;
+    animation: none;
   }
-  .big-btn[disabled]{ opacity:.4; pointer-events:none; }
+  .big-btn[disabled]{ opacity:.4; pointer-events:none; animation: none; }
   .btn-row{ display:flex; gap:10px; flex-wrap:wrap; }
   .btn-row .big-btn{ flex:1; min-width: 140px; }
 
@@ -75,7 +101,9 @@
   .chip{
     background: var(--surface-2); border:1px solid var(--border); color: var(--text);
     padding: 12px 18px; border-radius: 999px; font-size:15px; font-weight:700; min-height:44px;
+    transition: transform .15s ease;
   }
+  .chip:active{ transform: scale(.94); }
   .chip.selected{ background: var(--accent-grad); border-color: transparent; color:#fff; }
 
   .cat-title{ font-size:13px; font-weight:800; letter-spacing:.08em; color: var(--text-dim); margin: 18px 0 8px; }
@@ -84,8 +112,10 @@
     background: var(--surface); border:2px solid var(--border); border-radius:14px;
     padding: 14px 10px; text-align:center; font-weight:700; font-size:15px; min-height:56px;
     display:flex; align-items:center; justify-content:center;
+    transition: transform .15s ease, border-color .15s ease, background .15s ease;
   }
-  .idea-card.selected{ border-color: var(--accent2); background: rgba(255,182,72,.15); color:#fff; }
+  .idea-card:active{ transform: scale(.95); }
+  .idea-card.selected{ border-color: var(--accent2); background: rgba(255,182,72,.15); color:#fff; transform: scale(1.03); }
 
   .flow-step{
     background: var(--surface-2); border-radius: 14px; padding: 14px 16px; font-weight:700;
@@ -112,15 +142,27 @@
   .improve-card{
     background: var(--surface); border:2px solid var(--border); border-radius:16px; padding:16px 10px;
     text-align:center; cursor:pointer;
+    transition: transform .15s ease, border-color .15s ease, background .15s ease;
   }
-  .improve-card.selected{ border-color: var(--accent1); background: rgba(255,111,145,.14); }
+  .improve-card:active{ transform: scale(.95); }
+  .improve-card.selected{ border-color: var(--accent1); background: rgba(255,111,145,.14); transform: scale(1.03); }
   .improve-card .icon{ font-size: 30px; }
   .improve-card .title{ font-weight:800; font-size:14px; margin-top:6px; }
 
   .badge{ display:inline-block; background: var(--surface-2); color: var(--text-dim); font-size:12px; font-weight:700; padding:4px 10px; border-radius:999px; margin-bottom:10px; }
 
+  @keyframes gradientMove{
+    0%{ background-position: 0% 50%; }
+    50%{ background-position: 100% 50%; }
+    100%{ background-position: 0% 50%; }
+  }
   .complete-hero{ text-align:center; padding: 30px 10px; }
-  .complete-hero .big{ font-size: clamp(28px,8vw,38px); font-weight:900; background: var(--accent-grad); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .complete-hero .big{
+    font-size: clamp(28px,8vw,38px); font-weight:900;
+    background: var(--accent-grad); background-size: 200% 200%;
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    animation: gradientMove 3s ease infinite;
+  }
 
   .community-list{ display:flex; flex-direction:column; gap:10px; margin-top:12px; }
   .community-item{ background: var(--surface-2); border:1px solid var(--border); border-radius:12px; padding:12px 14px; }
@@ -133,6 +175,8 @@
 </style>
 </head>
 <body>
+<div class="blob blob1"></div>
+<div class="blob blob2"></div>
 <div id="app"></div>
 
 <script>
@@ -587,9 +631,81 @@ function screenShare(){
       </div>
     ` : ""}
 
+    <div class="card" style="margin-top:20px; text-align:center;">
+      <div style="font-weight:800; font-size:16px; margin-bottom:10px;">もっと時間がある人は…</div>
+      <button class="big-btn secondary" onclick="goTo('extbuild')">🚀 発展編：実際に公開してみる</button>
+    </div>
+
     <div class="footer-link">
       <button onclick="if(confirm('最初からやり直しますか？')) resetAll()">もう一度QUESTに挑戦する</button>
     </div>
+  `;
+}
+
+function extraHeader(label, backTarget){
+  return `
+    <div class="topbar">
+      <button class="backbtn" onclick="goTo('${backTarget}')">← もどる</button>
+      <div class="progress-wrap">
+        <div class="progress-label">${label}</div>
+      </div>
+    </div>
+  `;
+}
+
+const GAS_DOGET_CODE = `function doGet() {
+  return HtmlService.createHtmlOutputFromFile('index');
+}`;
+
+function screenExtBuild(){
+  return `
+    ${extraHeader("発展編 1 / 2", "share")}
+    <h2>EXTRA QUEST</h2>
+    <h1>構築（Build）</h1>
+    <p class="sub">Google Apps Scriptでアプリを作成します。<br>ここから先は、自分のアプリを"本物のWebアプリ"にする発展編です。</p>
+
+    <div class="card">
+      <ol style="padding-left:20px; line-height:2; font-size:15px; margin:0;">
+        <li><a href="https://script.google.com" target="_blank" rel="noopener">Google Apps Script</a> を開き、新しいプロジェクトを作成する</li>
+        <li>「Code.gs」に次のコードを貼り付ける</li>
+      </ol>
+      <div class="prompt-box" style="margin-top:10px;">${escapeHtml(GAS_DOGET_CODE)}</div>
+      <button class="big-btn secondary" style="margin-top:12px;" onclick="copyText(document.getElementById('gasCodeText').textContent, document.getElementById('gasCodeFlag'))">コピーする</button>
+      <span id="gasCodeText" style="display:none;">${escapeHtml(GAS_DOGET_CODE)}</span>
+      <div id="gasCodeFlag" class="copied-flag">コピーしました！</div>
+
+      <ol start="3" style="padding-left:20px; line-height:2; font-size:15px; margin-top:16px; margin-bottom:0;">
+        <li>左側の「＋」から「HTML」を追加し、ファイル名を <strong>index</strong> にする</li>
+        <li>Geminiが作ってくれたコードを、その「index.html」に貼り付ける</li>
+      </ol>
+    </div>
+
+    <button class="big-btn" onclick="goTo('extdeploy')">次へ：公開する</button>
+  `;
+}
+
+function screenExtDeploy(){
+  return `
+    ${extraHeader("発展編 2 / 2", "extbuild")}
+    <h2>EXTRA QUEST</h2>
+    <h1>公開（Deploy）</h1>
+    <p class="sub">アプリをインターネットに公開します。</p>
+
+    <div class="card">
+      <ol style="padding-left:20px; line-height:2; font-size:15px; margin:0;">
+        <li>右上の「デプロイ」→「新しいデプロイ」をクリック</li>
+        <li>種類の選択で「ウェブアプリ」を選ぶ</li>
+        <li>実行ユーザー：<strong>自分</strong>／アクセスできるユーザー：誰でも見られるようにしたいなら「全員」、学校の中だけで良ければ「学校名 内全員」を選ぶ（迷ったら先生に確認する）</li>
+        <li>「デプロイ」をクリックすると、公開用のURLが発行される</li>
+      </ol>
+    </div>
+
+    <div class="card" style="text-align:center;">
+      <div style="font-weight:800; font-size:18px;">これで、あなたのアプリは<br>インターネット上の本物のアプリになりました。</div>
+      <p class="sub" style="margin-top:10px; margin-bottom:0;">発行されたURLを、友達や先生に送ってみよう。</p>
+    </div>
+
+    <button class="big-btn" onclick="goTo('share')">SHAREにもどる</button>
   `;
 }
 
@@ -613,9 +729,11 @@ function render(){
     case "build": html = screenBuild(); break;
     case "improve": html = screenImprove(); break;
     case "share": html = screenShare(); break;
+    case "extbuild": html = screenExtBuild(); break;
+    case "extdeploy": html = screenExtDeploy(); break;
     default: html = screenStart();
   }
-  app.innerHTML = html;
+  app.innerHTML = `<div class="screen">${html}</div>`;
 }
 
 render();
