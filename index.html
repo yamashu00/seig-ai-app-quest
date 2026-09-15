@@ -218,6 +218,15 @@ function fallbackCopy(text, done){
   done();
 }
 
+function canvasNoteHtml(){
+  return `
+    <div class="card" style="border-color: var(--accent1); background: rgba(255,111,145,.08);">
+      <strong>先にこれをやろう👇</strong><br>
+      Geminiを開いたら、入力欄の「＋」ボタン →「Canvas」を選んでから、コピーした文章を貼り付けてください。Canvasを選ばないと、Geminiが説明だけで終わってしまいます。
+    </div>
+  `;
+}
+
 function aiLinksHtml(){
   return `
     <div class="ai-links">
@@ -419,7 +428,7 @@ iPadのSafariまたはChromeで使います。
 
 にしてください。
 
-まず動くものを作ってください。`;
+説明や確認は不要です。今すぐ、実際に動くアプリとして出力してください。`;
 
 function setBuildStatus(v){ update({ buildStatus: v }); goTo("improve"); }
 
@@ -429,6 +438,8 @@ function screenBuild(){
     <h2>QUEST 4</h2>
     <h1>まず動かしてみよう</h1>
     <p class="sub">完成させなくてOK。<br>まず動くものを1つ作ってみよう。</p>
+
+    ${canvasNoteHtml()}
 
     <div class="card">
       <div class="prompt-box">${escapeHtml(BUILD_PROMPT)}</div>
@@ -447,13 +458,13 @@ function screenBuild(){
 
 const IMPROVE_CARDS = [
   { key:"look", icon:"🎨", title:"見た目をよくしたい", needInput:false,
-    prompt: "今の機能はそのままで、iPadで使いやすく、もう少し見やすく楽しいデザインにしてください。" },
+    prompt: "今の機能はそのままで、iPadで使いやすく、もう少し見やすく楽しいデザインにしてください。説明ではなく、修正後のアプリをそのまま出力してください。" },
   { key:"function", icon:"➕", title:"機能を増やしたい", needInput:true,
     inputLabel:"何ができるようにしたい？", placeholder:"例：結果を保存できるようにしたい",
-    buildPrompt:(v)=>`今のアプリに『${v}』という機能を追加してください。現在の機能はできるだけ残してください。` },
+    buildPrompt:(v)=>`今のアプリに『${v}』という機能を追加してください。現在の機能はできるだけ残してください。説明ではなく、修正後のアプリをそのまま出力してください。` },
   { key:"bug", icon:"🐛", title:"うまく動かない", needInput:true,
     inputLabel:"何が起きていますか？", placeholder:"例：ボタンを押しても反応しない",
-    buildPrompt:(v)=>`今のアプリで、次の問題が起きています。\n\n${v}\n\n原因を考えて、修正方法を提案し、必要であればコードも修正してください。` },
+    buildPrompt:(v)=>`今のアプリで、次の問題が起きています。\n\n${v}\n\n原因を考えて、修正したアプリをそのまま出力してください。説明だけで終わらせないでください。` },
   { key:"advice", icon:"💡", title:"AIに改善案を聞く", needInput:false,
     prompt: "このアプリを高校生が使うとしたら、もっと使いやすく・楽しくするために改善できるところを3つ提案してください。その中で一番簡単に実装できる改善から教えてください。" }
 ];
@@ -499,6 +510,7 @@ function screenImprove(){
           <button class="big-btn secondary" style="margin-top:12px;" onclick="copyText(document.getElementById('improvePromptText_${c.key}').textContent, document.getElementById('improveCopiedFlag_${c.key}'))">コピーする</button>
           <span id="improvePromptText_${c.key}" style="display:none;">${escapeHtml(generated)}</span>
           <div id="improveCopiedFlag_${c.key}" class="copied-flag">コピーしました！</div>
+          ${c.key !== "advice" ? canvasNoteHtml() : ""}
           ${aiLinksHtml()}
         ` : ""}
       </div>
