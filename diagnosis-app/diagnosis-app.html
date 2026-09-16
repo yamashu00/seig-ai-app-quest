@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>〇〇診断</title>
+<style>
+  :root{
+    --bg: #201206;
+    --surface: #2e1b0a;
+    --surface-2: #3b230f;
+    --border: #5a3a1a;
+    --text: #fdf6ee;
+    --text-dim: #d9b78f;
+    --accent1: #ffa63d;
+    --accent2: #ff5f7a;
+    --accent-grad: linear-gradient(135deg, var(--accent1), var(--accent2));
+  }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{ margin:0; background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif; }
+  #app{ max-width:680px; margin:0 auto; padding:24px 20px 60px; }
+  h1{ font-size:clamp(22px,5vw,28px); font-weight:800; margin:4px 0 4px; }
+  p.sub{ color:var(--text-dim); font-size:15px; line-height:1.7; margin:0 0 20px; }
+  .card{ background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:20px; margin-bottom:16px; }
+  .progress-text{ font-size:13px; color:var(--text-dim); margin-bottom:14px; text-align:center; }
+  .qtext{ font-size:19px; font-weight:800; text-align:center; margin-bottom:18px; line-height:1.5; }
+  .opt-btn{
+    display:block; width:100%; text-align:center; border:none; cursor:pointer;
+    background:var(--surface-2); color:var(--text); font-weight:700; font-size:16px;
+    padding:16px 18px; border-radius:14px; min-height:54px; margin-bottom:10px; border:1px solid var(--border);
+  }
+  .opt-btn:active{ transform:scale(.98); background:var(--accent-grad); color:#2a1206; }
+  .btn{
+    display:inline-block; border:none; cursor:pointer; background:var(--accent-grad); color:#2a1206;
+    font-weight:800; font-size:16px; padding:15px 22px; border-radius:14px; min-height:52px; width:100%;
+    box-shadow:0 6px 20px rgba(255,95,122,.3);
+  }
+  .btn:active{ transform:scale(.98); }
+  .result-emoji{ font-size:60px; text-align:center; margin-bottom:6px; }
+  .result-title{ font-size:26px; font-weight:900; text-align:center; margin-bottom:12px;
+    background:var(--accent-grad); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .result-desc{ font-size:15px; line-height:1.8; text-align:center; color:var(--text); }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+/* ============================================================
+   ここを書き換えれば、オリジナルの診断が作れます。
+   1. QUESTIONS：質問と選択肢（それぞれどのタイプに何点入るか）
+   2. RESULTS：タイプごとの結果表示
+   ============================================================ */
+const QUESTIONS = [
+  {
+    text: "休みの日、どっちで過ごしたい？",
+    options: [
+      { label: "友達とわいわい出かける", scores: { social: 2 } },
+      { label: "家でひとりのんびりする", scores: { calm: 2 } }
+    ]
+  },
+  {
+    text: "グループ課題、あなたはどっちのタイプ？",
+    options: [
+      { label: "率先して仕切る", scores: { leader: 2 } },
+      { label: "みんなの意見を聞いてまとめる", scores: { social: 1, calm: 1 } }
+    ]
+  },
+  {
+    text: "急に予定が変わったら？",
+    options: [
+      { label: "そのときの気分で決める", scores: { free: 2 } },
+      { label: "予定通りに進めたい", scores: { leader: 1, calm: 1 } }
+    ]
+  },
+  {
+    text: "新しい環境に行くとき、まず何をする？",
+    options: [
+      { label: "とりあえず話しかけてみる", scores: { social: 2 } },
+      { label: "まず様子を観察する", scores: { calm: 1, free: 1 } }
+    ]
+  },
+  {
+    text: "テスト前日、どう過ごす？",
+    options: [
+      { label: "計画通りコツコツ進める", scores: { leader: 2 } },
+      { label: "そのときの調子でやる", scores: { free: 2 } }
+    ]
+  }
+];
+
+const RESULTS = {
+  social: { emoji: "🌸", title: "ムードメーカータイプ", desc: "人と関わることでエネルギーが湧くタイプ。周りを明るくする力があります。" },
+  calm:   { emoji: "🌙", title: "じっくり観察タイプ", desc: "落ち着いて物事を見極めるタイプ。冷静な判断力が強みです。" },
+  leader: { emoji: "🔥", title: "リーダータイプ", desc: "計画的に物事を進めるのが得意。頼れる存在として周りから信頼されます。" },
+  free:   { emoji: "🍃", title: "自由人タイプ", desc: "その場の直感を大事にするタイプ。柔軟な発想で新しい道を見つけます。" }
+};
+/* ============================================================ */
+
+let state = { index: 0, scores: {}, done: false };
+
+function answer(scores){
+  Object.keys(scores).forEach(k => {
+    state.scores[k] = (state.scores[k] || 0) + scores[k];
+  });
+  state.index++;
+  if(state.index >= QUESTIONS.length) state.done = true;
+  render();
+}
+
+function restart(){
+  state = { index: 0, scores: {}, done: false };
+  render();
+}
+
+function getResultKey(){
+  let best = null, bestScore = -Infinity;
+  Object.keys(state.scores).forEach(k => {
+    if(state.scores[k] > bestScore){ best = k; bestScore = state.scores[k]; }
+  });
+  return best || Object.keys(RESULTS)[0];
+}
+
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, s => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[s]));
+}
+
+function render(){
+  const app = document.getElementById("app");
+
+  if(state.done){
+    const key = getResultKey();
+    const r = RESULTS[key];
+    app.innerHTML = `
+      <h1>診断結果</h1>
+      <div class="card">
+        <div class="result-emoji">${r.emoji}</div>
+        <div class="result-title">${escapeHtml(r.title)}</div>
+        <div class="result-desc">${escapeHtml(r.desc)}</div>
+      </div>
+      <button class="btn" onclick="restart()">🔁 もう一度診断する</button>
+    `;
+    return;
+  }
+
+  const q = QUESTIONS[state.index];
+  app.innerHTML = `
+    <h1>〇〇診断</h1>
+    <p class="sub">質問に答えていくだけで、あなたのタイプがわかります。</p>
+    <div class="card">
+      <div class="progress-text">Q${state.index+1} / ${QUESTIONS.length}</div>
+      <div class="qtext">${escapeHtml(q.text)}</div>
+      ${q.options.map(o => `
+        <button class="opt-btn" onclick='answer(${JSON.stringify(o.scores)})'>${escapeHtml(o.label)}</button>
+      `).join("")}
+    </div>
+  `;
+}
+
+render();
+</script>
+</body>
+</html>

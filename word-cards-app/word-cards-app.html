@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>オリジナル単語帳</title>
+<style>
+  :root{
+    --bg: #0a1a14;
+    --surface: #10261d;
+    --surface-2: #163526;
+    --border: #245038;
+    --text: #eefbf3;
+    --text-dim: #93c2a8;
+    --accent1: #34d399;
+    --accent2: #a3e635;
+    --accent-grad: linear-gradient(135deg, var(--accent1), var(--accent2));
+    --bad: #f87171;
+  }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{ margin:0; background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif; }
+  #app{ max-width:720px; margin:0 auto; padding:24px 20px 60px; }
+  h1{ font-size:clamp(22px,5vw,28px); font-weight:800; margin:4px 0 4px; }
+  p.sub{ color:var(--text-dim); font-size:15px; line-height:1.7; margin:0 0 20px; }
+  .card{ background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:18px; margin-bottom:16px; }
+  label{ display:block; font-weight:700; font-size:13px; margin:0 0 6px; }
+  input[type=text]{
+    width:100%; background:var(--surface-2); border:1px solid var(--border); color:var(--text);
+    border-radius:12px; padding:11px 14px; font-size:15px; font-family:inherit; margin-bottom:12px;
+  }
+  .btn{
+    display:inline-block; border:none; cursor:pointer; background:var(--accent-grad); color:#052014;
+    font-weight:800; font-size:15px; padding:13px 20px; border-radius:14px; min-height:48px; width:100%;
+    box-shadow:0 6px 18px rgba(52,211,153,.25);
+  }
+  .btn.secondary{ background:var(--surface-2); color:var(--text); box-shadow:none; border:1px solid var(--border); }
+  .btn:active{ transform:scale(.98); }
+  .btn-row{ display:flex; gap:10px; }
+  .btn-row .btn{ flex:1; }
+  .tabs{ display:flex; gap:8px; margin:20px 0 12px; }
+  .tab{ flex:1; text-align:center; padding:10px; border-radius:12px; background:var(--surface-2); color:var(--text-dim); font-weight:700; cursor:pointer; border:1px solid var(--border); }
+  .tab.active{ background:var(--accent-grad); color:#052014; border-color:transparent; }
+
+  .list-item{ background:var(--surface-2); border:1px solid var(--border); border-radius:12px; padding:12px 14px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; gap:10px; }
+  .list-item .q{ font-weight:700; }
+  .list-item .a{ font-size:13px; color:var(--text-dim); }
+  .list-item .del{ background:none; border:none; color:var(--text-dim); font-size:13px; cursor:pointer; flex-shrink:0; }
+
+  .flashcard{
+    background:var(--surface-2); border:1px solid var(--border); border-radius:20px;
+    min-height:180px; display:flex; align-items:center; justify-content:center; text-align:center;
+    font-size:22px; font-weight:800; padding:24px; cursor:pointer; margin-bottom:16px;
+  }
+  .flashcard .label{ display:block; font-size:12px; font-weight:700; color:var(--text-dim); margin-bottom:10px; letter-spacing:.05em; }
+  .progress-text{ font-size:13px; color:var(--text-dim); margin-bottom:12px; text-align:center; }
+  .empty-msg{ color:var(--text-dim); font-size:14px; text-align:center; padding:20px 0; }
+  .done-badge{ display:inline-block; font-size:11px; font-weight:800; padding:2px 8px; border-radius:999px; background:rgba(52,211,153,.15); color:var(--accent1); margin-left:6px; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+const CARDS_KEY = "wordcards_v1";
+
+let state = {
+  cards: loadJSON(),   // {id, q, a, mastered}
+  tab: "list",
+  studyOrder: [],
+  studyIndex: 0,
+  flipped: false
+};
+
+function loadJSON(){
+  try{ return JSON.parse(localStorage.getItem(CARDS_KEY)) || []; }catch(e){ return []; }
+}
+function saveCards(){ localStorage.setItem(CARDS_KEY, JSON.stringify(state.cards)); }
+function uid(){ return Date.now() + "_" + Math.floor(Math.random()*10000); }
+
+function addCard(){
+  const q = document.getElementById("qInput").value.trim();
+  const a = document.getElementById("aInput").value.trim();
+  if(!q || !a) return;
+  state.cards.push({ id: uid(), q, a, mastered: false });
+  saveCards();
+  document.getElementById("qInput").value = "";
+  document.getElementById("aInput").value = "";
+  render();
+}
+function deleteCard(id){
+  state.cards = state.cards.filter(c => c.id !== id);
+  saveCards();
+  render();
+}
+
+function shuffleArray(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+function switchTab(tab){
+  state.tab = tab;
+  if(tab === "study"){
+    state.studyOrder = shuffleArray(state.cards.map(c => c.id));
+    state.studyIndex = 0;
+    state.flipped = false;
+  }
+  render();
+}
+
+function flipCard(){ state.flipped = !state.flipped; render(); }
+
+function markCard(mastered){
+  const id = state.studyOrder[state.studyIndex];
+  const c = state.cards.find(c => c.id === id);
+  if(c){ c.mastered = mastered; saveCards(); }
+  state.studyIndex++;
+  state.flipped = false;
+  render();
+}
+
+function restartStudy(){
+  state.studyOrder = shuffleArray(state.cards.map(c => c.id));
+  state.studyIndex = 0;
+  state.flipped = false;
+  render();
+}
+
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, s => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[s]));
+}
+
+function renderList(){
+  if(state.cards.length === 0){
+    return `<div class="empty-msg">まだカードがありません。上のフォームから追加しよう。</div>`;
+  }
+  const masteredCount = state.cards.filter(c => c.mastered).length;
+  return `
+    <div class="progress-text">全${state.cards.length}枚中、覚えたカード：${masteredCount}枚</div>
+    ${state.cards.map(c => `
+      <div class="list-item">
+        <div>
+          <div class="q">${escapeHtml(c.q)}${c.mastered ? '<span class="done-badge">覚えた</span>' : ''}</div>
+          <div class="a">${escapeHtml(c.a)}</div>
+        </div>
+        <button class="del" onclick="deleteCard('${c.id}')">削除</button>
+      </div>
+    `).join("")}
+  `;
+}
+
+function renderStudy(){
+  if(state.cards.length === 0){
+    return `<div class="empty-msg">カードを追加してから、学習モードを使おう。</div>`;
+  }
+  if(state.studyIndex >= state.studyOrder.length){
+    const masteredCount = state.cards.filter(c => c.mastered).length;
+    return `
+      <div class="empty-msg">
+        今回はここまで！<br>
+        全${state.cards.length}枚中、覚えたカード：${masteredCount}枚
+      </div>
+      <button class="btn" onclick="restartStudy()">🔄 もう一周する</button>
+    `;
+  }
+  const card = state.cards.find(c => c.id === state.studyOrder[state.studyIndex]);
+  return `
+    <div class="progress-text">${state.studyIndex+1} / ${state.studyOrder.length}枚目</div>
+    <div class="flashcard" onclick="flipCard()">
+      <div>
+        <span class="label">${state.flipped ? '答え（タップで戻す）' : '問題（タップでめくる）'}</span>
+        ${escapeHtml(state.flipped ? card.a : card.q)}
+      </div>
+    </div>
+    ${state.flipped ? `
+      <div class="btn-row">
+        <button class="btn secondary" onclick="markCard(false)">🔁 もう一度</button>
+        <button class="btn" onclick="markCard(true)">✅ 覚えた</button>
+      </div>
+    ` : `<p class="sub" style="text-align:center;">カードをタップして答えを見よう</p>`}
+  `;
+}
+
+function render(){
+  const app = document.getElementById("app");
+  app.innerHTML = `
+    <h1>オリジナル単語帳</h1>
+    <p class="sub">自分だけの単語帳・クイズカードを作って、テスト勉強に使おう。</p>
+
+    <div class="card">
+      <label>問題（表）</label>
+      <input type="text" id="qInput" placeholder="例：photosynthesis">
+      <label>答え（裏）</label>
+      <input type="text" id="aInput" placeholder="例：光合成">
+      <button class="btn" onclick="addCard()">＋ カードを追加</button>
+    </div>
+
+    <div class="tabs">
+      <div class="tab ${state.tab==='list'?'active':''}" onclick="switchTab('list')">カード一覧</div>
+      <div class="tab ${state.tab==='study'?'active':''}" onclick="switchTab('study')">📖 学習モード</div>
+    </div>
+
+    <div class="card">
+      ${state.tab === 'list' ? renderList() : renderStudy()}
+    </div>
+  `;
+}
+
+render();
+</script>
+</body>
+</html>

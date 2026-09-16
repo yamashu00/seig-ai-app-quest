@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>推し活スケジュール帳</title>
+<style>
+  :root{
+    --bg: #1c1024;
+    --surface: #2a1730;
+    --surface-2: #35203d;
+    --border: #4c2e56;
+    --text: #fbf3fb;
+    --text-dim: #cbaed0;
+    --accent1: #ff5fa2;
+    --accent2: #b06bff;
+    --accent-grad: linear-gradient(135deg, var(--accent1), var(--accent2));
+    --good: #34d399;
+  }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{ margin:0; background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif; }
+  #app{ max-width:720px; margin:0 auto; padding:24px 20px 60px; }
+  h1{ font-size:clamp(22px,5vw,28px); font-weight:800; margin:4px 0 4px; }
+  p.sub{ color:var(--text-dim); font-size:15px; line-height:1.7; margin:0 0 20px; }
+  .card{ background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:18px; margin-bottom:16px; }
+  label{ display:block; font-weight:700; font-size:13px; margin:0 0 6px; }
+  input[type=text], input[type=date], input[type=number], select{
+    width:100%; background:var(--surface-2); border:1px solid var(--border); color:var(--text);
+    border-radius:12px; padding:11px 14px; font-size:15px; font-family:inherit; margin-bottom:12px;
+  }
+  .btn{
+    display:inline-block; border:none; cursor:pointer; background:var(--accent-grad); color:#fff;
+    font-weight:800; font-size:15px; padding:13px 20px; border-radius:14px; min-height:48px;
+    box-shadow:0 6px 18px rgba(255,95,162,.3); width:100%;
+  }
+  .btn.secondary{ background:var(--surface-2); color:var(--text); box-shadow:none; border:1px solid var(--border); }
+  .btn:active{ transform:scale(.98); }
+  .btn.small{ width:auto; padding:8px 14px; font-size:13px; min-height:36px; }
+  h2.section{ font-size:14px; font-weight:800; color:var(--accent1); letter-spacing:.05em; margin:24px 0 10px; }
+
+  .oshi-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:12px; }
+  .oshi-card{ background:var(--surface-2); border:1px solid var(--border); border-radius:14px; padding:14px; text-align:center; position:relative; }
+  .oshi-card .name{ font-weight:800; font-size:16px; margin-bottom:6px; }
+  .oshi-card .count{ font-size:26px; font-weight:900; background:var(--accent-grad); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .oshi-card .countlabel{ font-size:12px; color:var(--text-dim); }
+  .oshi-card .del{ position:absolute; top:6px; right:8px; background:none; border:none; color:var(--text-dim); font-size:14px; cursor:pointer; }
+
+  .event-item{ background:var(--surface-2); border:1px solid var(--border); border-radius:12px; padding:12px 14px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; gap:10px; }
+  .event-item .date{ font-weight:800; color:var(--accent2); font-size:13px; white-space:nowrap; }
+  .event-item .title{ font-weight:700; font-size:15px; }
+  .event-item .who{ font-size:12px; color:var(--text-dim); }
+  .event-item .del{ background:none; border:none; color:var(--text-dim); font-size:13px; cursor:pointer; flex-shrink:0; }
+  .empty-msg{ color:var(--text-dim); font-size:14px; text-align:center; padding:16px 0; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+const OSHI_KEY = "oshi_list_v1";
+const EVENT_KEY = "oshi_events_v1";
+
+let state = {
+  oshiList: loadJSON(OSHI_KEY, []),   // {id, name, month, day}
+  events: loadJSON(EVENT_KEY, [])     // {id, date, title, who}
+};
+
+function loadJSON(key, fallback){
+  try{ return JSON.parse(localStorage.getItem(key)) || fallback; }catch(e){ return fallback; }
+}
+function saveOshi(){ localStorage.setItem(OSHI_KEY, JSON.stringify(state.oshiList)); }
+function saveEvents(){ localStorage.setItem(EVENT_KEY, JSON.stringify(state.events)); }
+function uid(){ return Date.now() + "_" + Math.floor(Math.random()*10000); }
+
+function daysUntilBirthday(month, day){
+  const now = new Date();
+  const y = now.getFullYear();
+  let target = new Date(y, month-1, day);
+  target.setHours(0,0,0,0);
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  if(target < today) target = new Date(y+1, month-1, day);
+  return Math.round((target - today) / 86400000);
+}
+
+function addOshi(){
+  const name = document.getElementById("oshiName").value.trim();
+  const month = parseInt(document.getElementById("oshiMonth").value, 10);
+  const day = parseInt(document.getElementById("oshiDay").value, 10);
+  if(!name || !month || !day) return;
+  state.oshiList.push({ id: uid(), name, month, day });
+  saveOshi();
+  document.getElementById("oshiName").value = "";
+  document.getElementById("oshiMonth").value = "";
+  document.getElementById("oshiDay").value = "";
+  render();
+}
+function deleteOshi(id){
+  state.oshiList = state.oshiList.filter(o => o.id !== id);
+  saveOshi();
+  render();
+}
+
+function addEvent(){
+  const date = document.getElementById("eventDate").value;
+  const title = document.getElementById("eventTitle").value.trim();
+  const who = document.getElementById("eventWho").value;
+  if(!date || !title) return;
+  state.events.push({ id: uid(), date, title, who });
+  saveEvents();
+  document.getElementById("eventTitle").value = "";
+  render();
+}
+function deleteEvent(id){
+  state.events = state.events.filter(e => e.id !== id);
+  saveEvents();
+  render();
+}
+
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, s => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[s]));
+}
+
+function render(){
+  const app = document.getElementById("app");
+  const oshiOptions = state.oshiList.map(o => `<option value="${o.id}">${escapeHtml(o.name)}</option>`).join("");
+  const sortedEvents = state.events.slice().sort((a,b) => a.date < b.date ? -1 : 1);
+  const todayStr = new Date().toISOString().slice(0,10);
+
+  app.innerHTML = `
+    <h1>推し活スケジュール帳</h1>
+    <p class="sub">推しの誕生日カウントダウンと、参加予定のイベントを管理しよう。</p>
+
+    <h2 class="section">🎂 推しの誕生日</h2>
+    <div class="card">
+      <label>推しの名前</label>
+      <input type="text" id="oshiName" placeholder="例：〇〇">
+      <div style="display:flex; gap:8px;">
+        <div style="flex:1;">
+          <label>誕生月</label>
+          <input type="number" id="oshiMonth" min="1" max="12" placeholder="例：4">
+        </div>
+        <div style="flex:1;">
+          <label>誕生日</label>
+          <input type="number" id="oshiDay" min="1" max="31" placeholder="例：15">
+        </div>
+      </div>
+      <button class="btn" onclick="addOshi()">＋ 推しを追加</button>
+    </div>
+
+    ${state.oshiList.length ? `
+      <div class="oshi-grid">
+        ${state.oshiList.map(o => {
+          const d = daysUntilBirthday(o.month, o.day);
+          return `
+            <div class="oshi-card">
+              <button class="del" onclick="deleteOshi('${o.id}')">✕</button>
+              <div class="name">${escapeHtml(o.name)}</div>
+              <div class="count">${d === 0 ? '🎉' : d}</div>
+              <div class="countlabel">${d === 0 ? '誕生日です！' : `あと${d}日（${o.month}/${o.day}）`}</div>
+            </div>
+          `;
+        }).join("")}
+      </div>
+    ` : `<div class="empty-msg">推しを登録すると、誕生日までのカウントダウンが出ます。</div>`}
+
+    <h2 class="section">📅 予定</h2>
+    <div class="card">
+      <label>日付</label>
+      <input type="date" id="eventDate" value="${todayStr}">
+      <label>予定の内容</label>
+      <input type="text" id="eventTitle" placeholder="例：ライブ配信、握手会、グッズ発売日など">
+      <label>関連する推し（任意）</label>
+      <select id="eventWho">
+        <option value="">選択しない</option>
+        ${oshiOptions}
+      </select>
+      <button class="btn" onclick="addEvent()">＋ 予定を追加</button>
+    </div>
+
+    ${sortedEvents.length ? sortedEvents.map(e => {
+      const oshi = state.oshiList.find(o => o.id === e.who);
+      return `
+        <div class="event-item">
+          <div>
+            <div class="date">${e.date}</div>
+            <div class="title">${escapeHtml(e.title)}</div>
+            ${oshi ? `<div class="who">🎀 ${escapeHtml(oshi.name)}</div>` : ""}
+          </div>
+          <button class="del" onclick="deleteEvent('${e.id}')">削除</button>
+        </div>
+      `;
+    }).join("") : `<div class="empty-msg">まだ予定がありません。</div>`}
+  `;
+}
+
+render();
+</script>
+</body>
+</html>
