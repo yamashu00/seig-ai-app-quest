@@ -172,6 +172,38 @@
   a{ color: var(--accent2); }
   .footer-link{ text-align:center; margin-top:18px; }
   .footer-link button{ background:none; border:none; color: var(--text-dim); text-decoration:underline; font-size:14px; }
+
+  /* GAS操作イメージ図（実物のスクリーンショットではなくイメージです） */
+  .mock-caption{ font-size:12px; color: var(--text-dim); margin: 6px 0 10px; }
+  .mockup{
+    background:#fdfcfb; color:#2a2a2a; border-radius:12px; overflow:hidden;
+    border:1px solid rgba(0,0,0,.08); margin:0 0 14px; box-shadow: 0 6px 20px rgba(0,0,0,.25);
+  }
+  .mockup-bar{ background:#efece8; padding:7px 10px; display:flex; gap:6px; align-items:center; }
+  .mockup-dot{ width:8px; height:8px; border-radius:50%; background:#d8d3cd; }
+  .mockup-body{ display:flex; font-size:11px; min-height:120px; }
+  .mockup-sidebar{ width:38%; background:#f7f5f2; border-right:1px solid #ece8e2; padding:10px 8px; }
+  .mockup-sidebar-title{ font-size:10px; font-weight:800; color:#9a9187; letter-spacing:.05em; margin-bottom:6px; }
+  .mockup-item{ padding:6px 8px; border-radius:6px; margin-bottom:6px; background:#fff; border:1px solid #eee; color:#555; font-weight:600; }
+  .mockup-item.highlight{
+    background: var(--accent-grad); color:#fff; font-weight:800; position:relative;
+    box-shadow: 0 0 0 3px rgba(255,111,145,.25);
+  }
+  .mockup-plus{ width:26px; height:26px; border-radius:50%; border:1.5px dashed #b9b2a8; display:flex; align-items:center; justify-content:center; font-weight:800; color:#9a9187; }
+  .mockup-main{ flex:1; padding:10px; background:#fff; }
+  .mockup-line{ height:7px; border-radius:4px; background:#eee; margin-bottom:7px; }
+  .mockup-line.short{ width:55%; }
+  .mockup-topbtn{
+    margin-left:auto; background: var(--accent-grad); color:#fff; font-size:10px; font-weight:800;
+    padding:5px 10px; border-radius:8px; position:relative;
+  }
+  .mockup-callout{
+    display:inline-block; margin-top:8px; background: var(--surface-2); color: var(--accent2);
+    font-size:12px; font-weight:800; padding:5px 10px; border-radius:8px; border:1px solid var(--border);
+  }
+  .mockup-dialog{ padding:10px; background:#fbf9f7; }
+  .mockup-field{ background:#fff; border:1px solid #e6e1da; border-radius:6px; padding:6px 8px; margin-bottom:6px; font-size:11px; color:#555; }
+  .mockup-field b{ color:#2a2a2a; }
 </style>
 </head>
 <body>
@@ -665,7 +697,7 @@ function screenExtBuild(){
     <p class="sub">Google Apps Scriptでアプリを作成します。<br>ここから先は、自分のアプリを"本物のWebアプリ"にする発展編です。</p>
 
     <div class="card">
-      作例：<a href="https://script.google.com/macros/s/AKfycbzNWMuTVVNNmAeI_qC5paNWsokt7CHQZUM7hDwOufLJIYXHKsV9sdATyAZwYLNDHqyj/exec" target="_blank" rel="noopener">学校の忘れ物防止チェッカー</a>（先生が作った例です。こんな感じのものが作れます）
+      作例：<a href="https://script.google.com/macros/s/AKfycbzNWMuTVVNNmAeI_qC5paNWsokt7CHQZUM7hDwOufLJIYXHKsV9sdATyAZwYLNDHqyj/exec" target="_blank" rel="noopener">学校の忘れ物防止チェッカー</a>（こんな感じのものが作れます）
     </div>
 
     <div class="card" style="font-size:13px; color:var(--text-dim);">
@@ -677,6 +709,24 @@ function screenExtBuild(){
         <li><a href="https://script.google.com" target="_blank" rel="noopener">Google Apps Script</a> を開き、新しいプロジェクトを作成する</li>
         <li>最初からある「コード.gs」に次のコードを貼り付ける（ファイル名は変えなくてOK）</li>
       </ol>
+
+      <div class="mockup">
+        <div class="mockup-bar"><div class="mockup-dot"></div><div class="mockup-dot"></div><div class="mockup-dot"></div></div>
+        <div class="mockup-body">
+          <div class="mockup-sidebar">
+            <div class="mockup-sidebar-title">ファイル</div>
+            <div class="mockup-item highlight">📄 コード.gs</div>
+            <div class="mockup-plus">＋</div>
+          </div>
+          <div class="mockup-main">
+            <div class="mockup-line"></div>
+            <div class="mockup-line short"></div>
+            <div class="mockup-line"></div>
+          </div>
+        </div>
+      </div>
+      <div class="mock-caption">↑ イメージ図（実際の画面とは多少違います）。左に「コード.gs」があります。ここにコードを貼り付けます。</div>
+
       <div class="prompt-box" style="margin-top:10px;">${escapeHtml(GAS_DOGET_CODE)}</div>
       <button class="big-btn secondary" style="margin-top:12px;" onclick="copyText(document.getElementById('gasCodeText').textContent, document.getElementById('gasCodeFlag'))">コピーする</button>
       <span id="gasCodeText" style="display:none;">${escapeHtml(GAS_DOGET_CODE)}</span>
@@ -686,6 +736,24 @@ function screenExtBuild(){
         <li>左側の「＋」から「HTML」を追加する（ファイル名は既定の「無題」のままでOK、変えない）</li>
         <li>Geminiが作ってくれたコードを、その「無題.html」に貼り付ける</li>
       </ol>
+
+      <div class="mockup" style="margin-top:10px;">
+        <div class="mockup-bar"><div class="mockup-dot"></div><div class="mockup-dot"></div><div class="mockup-dot"></div></div>
+        <div class="mockup-body">
+          <div class="mockup-sidebar">
+            <div class="mockup-sidebar-title">ファイル</div>
+            <div class="mockup-item">📄 コード.gs</div>
+            <div class="mockup-item highlight">📄 無題.html</div>
+            <div class="mockup-plus">＋</div>
+          </div>
+          <div class="mockup-main">
+            <div class="mockup-line"></div>
+            <div class="mockup-line"></div>
+            <div class="mockup-line short"></div>
+          </div>
+        </div>
+      </div>
+      <div class="mock-caption">↑「＋」→「HTML」を選ぶと「無題.html」ができます。ここにGeminiのコードを貼り付けます。</div>
     </div>
 
     <button class="big-btn" onclick="goTo('extdeploy')">次へ：公開する</button>
@@ -706,6 +774,19 @@ function screenExtDeploy(){
         <li>実行ユーザー：<strong>自分</strong>／アクセスできるユーザー：誰でも見られるようにしたいなら「全員」、学校の中だけで良ければ「学校名 内全員」を選ぶ（迷ったら先生に確認する）</li>
         <li>「デプロイ」をクリックすると、公開用のURLが発行される</li>
       </ol>
+
+      <div class="mockup" style="margin-top:10px;">
+        <div class="mockup-bar">
+          <div class="mockup-dot"></div><div class="mockup-dot"></div><div class="mockup-dot"></div>
+          <div class="mockup-topbtn">デプロイ ▾</div>
+        </div>
+        <div class="mockup-dialog">
+          <div class="mockup-field">種類の選択：<b>⚙️ ウェブアプリ</b></div>
+          <div class="mockup-field">実行ユーザー：<b>自分</b></div>
+          <div class="mockup-field">アクセスできるユーザー：<b>全員 ／ 学校内全員</b></div>
+        </div>
+      </div>
+      <div class="mock-caption">↑ イメージ図。右上の「デプロイ」ボタン→「新しいデプロイ」で、この設定画面が出ます。</div>
     </div>
 
     <div class="card" style="text-align:center;">
