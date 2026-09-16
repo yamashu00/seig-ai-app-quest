@@ -77,9 +77,10 @@ const STORAGE_KEY = "seat_shuffle_history_v2";
 const ROWS = 6;
 const COLS = 6;
 const SEATS = ROWS * COLS;
+const NAMES_KEY = "seat_shuffle_names_v1";
 
 let state = {
-  names: [],
+  names: loadNames(),
   current: null,
   history: load(),
   tab: "result"
@@ -89,6 +90,21 @@ function load(){
   try{ return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }catch(e){ return []; }
 }
 function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state.history)); }
+
+function loadNames(){
+  try{ return JSON.parse(localStorage.getItem(NAMES_KEY)) || []; }catch(e){ return []; }
+}
+function saveNames(names){ localStorage.setItem(NAMES_KEY, JSON.stringify(names)); }
+
+function onNamesInput(v){
+  saveNames(v.split("\n").map(s=>s.trim()).filter(Boolean));
+}
+
+function fillSampleNames(){
+  const sample = Array.from({length:30}, (_,i)=>`生徒${i+1}`);
+  document.getElementById("namesInput").value = sample.join("\n");
+  saveNames(sample);
+}
 
 function shuffleArray(arr){
   const a = arr.slice();
@@ -198,10 +214,11 @@ function render(){
 
     <div class="card">
       <label>名簿（1行に1人）</label>
-      <textarea id="namesInput" placeholder="山田太郎&#10;佐藤花子&#10;...">${state.names.join("\n")}</textarea>
-      <div class="hint">最大36人まで。36人を超えた分は今回は座席に入りません。</div>
+      <textarea id="namesInput" placeholder="山田太郎&#10;佐藤花子&#10;..." oninput="onNamesInput(this.value)">${state.names.join("\n")}</textarea>
+      <div class="hint">最大36人まで。36人を超えた分は今回は座席に入りません。入力内容はこの端末に自動保存されます。</div>
       <div class="row">
         <button class="btn" onclick="doShuffle()">🎲 シャッフルする</button>
+        <button class="btn secondary" onclick="fillSampleNames()">✏️ サンプル名簿を入れる（30人）</button>
       </div>
     </div>
 
