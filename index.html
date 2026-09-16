@@ -654,7 +654,7 @@ function extraHeader(label, backTarget){
 }
 
 const GAS_DOGET_CODE = `function doGet() {
-  return HtmlService.createHtmlOutputFromFile('index');
+  return HtmlService.createHtmlOutputFromFile('無題');
 }`;
 
 function screenExtBuild(){
@@ -665,9 +665,17 @@ function screenExtBuild(){
     <p class="sub">Google Apps Scriptでアプリを作成します。<br>ここから先は、自分のアプリを"本物のWebアプリ"にする発展編です。</p>
 
     <div class="card">
+      作例：<a href="https://script.google.com/macros/s/AKfycbzNWMuTVVNNmAeI_qC5paNWsokt7CHQZUM7hDwOufLJIYXHKsV9sdATyAZwYLNDHqyj/exec" target="_blank" rel="noopener">学校の忘れ物防止チェッカー</a>（先生が作った例です。こんな感じのものが作れます）
+    </div>
+
+    <div class="card" style="font-size:13px; color:var(--text-dim);">
+      ※Google Apps Scriptのエディタは、iPadだと文字入力がしづらかったり、読み込みが遅くなることがあります。うまく開けないときは、先生に声をかけてください。
+    </div>
+
+    <div class="card">
       <ol style="padding-left:20px; line-height:2; font-size:15px; margin:0;">
         <li><a href="https://script.google.com" target="_blank" rel="noopener">Google Apps Script</a> を開き、新しいプロジェクトを作成する</li>
-        <li>「Code.gs」に次のコードを貼り付ける</li>
+        <li>最初からある「コード.gs」に次のコードを貼り付ける（ファイル名は変えなくてOK）</li>
       </ol>
       <div class="prompt-box" style="margin-top:10px;">${escapeHtml(GAS_DOGET_CODE)}</div>
       <button class="big-btn secondary" style="margin-top:12px;" onclick="copyText(document.getElementById('gasCodeText').textContent, document.getElementById('gasCodeFlag'))">コピーする</button>
@@ -675,8 +683,8 @@ function screenExtBuild(){
       <div id="gasCodeFlag" class="copied-flag">コピーしました！</div>
 
       <ol start="3" style="padding-left:20px; line-height:2; font-size:15px; margin-top:16px; margin-bottom:0;">
-        <li>左側の「＋」から「HTML」を追加し、ファイル名を <strong>index</strong> にする</li>
-        <li>Geminiが作ってくれたコードを、その「index.html」に貼り付ける</li>
+        <li>左側の「＋」から「HTML」を追加する（ファイル名は既定の「無題」のままでOK、変えない）</li>
+        <li>Geminiが作ってくれたコードを、その「無題.html」に貼り付ける</li>
       </ol>
     </div>
 
