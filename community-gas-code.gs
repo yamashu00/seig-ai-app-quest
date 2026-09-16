@@ -1,3 +1,5 @@
+// スプレッドシートのURL https://docs.google.com/spreadsheets/d/【ここ】/edit の【ここ】部分を貼る
+const SHEET_ID = "ここにスプレッドシートのIDを貼る";
 const SHEET_NAME = "community";
 
 function doGet(e) {
@@ -22,7 +24,7 @@ function doPost(e) {
 }
 
 function getSheet() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = SpreadsheetApp.openById(SHEET_ID);
   let sheet = ss.getSheetByName(SHEET_NAME);
   if (!sheet) {
     sheet = ss.insertSheet(SHEET_NAME);
