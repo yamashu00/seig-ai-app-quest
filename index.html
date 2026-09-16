@@ -219,6 +219,13 @@ const AI_LINKS = {
   gemini: "https://gemini.google.com"
 };
 
+/* ============================================================
+   「みんなのアイデア」を全端末で共有するためのAPI（GAS Webアプリ）。
+   community-gas-code.gs をデプロイして発行されたURLをここに貼る。
+   空のままなら、この端末だけのローカル一覧として動作する。
+   ============================================================ */
+const COMMUNITY_API_URL = "";
+
 const STORAGE_KEY = "ai_app_quest_state_v1";
 
 const SCREENS = ["start","see","idea","define","build","improve","share"];
@@ -606,17 +613,49 @@ function screenImprove(){
   `;
 }
 
-function setShareStatus(v){ update({ shareStatus: v }); }
+function setShareStatus(v){
+  update({ shareStatus: v });
+  loadCommunityFromServer();
+}
 
 function submitCommunity(){
   const name = document.getElementById("communityName").value.trim();
   const desc = document.getElementById("communityDesc").value.trim();
+  const url = document.getElementById("communityUrl").value.trim();
   if(!name || !desc) return;
-  state.community.push({ name, desc });
+  state.community.push({ name, desc, url });
   saveState();
   document.getElementById("communityName").value = "";
   document.getElementById("communityDesc").value = "";
+  document.getElementById("communityUrl").value = "";
   render();
+  postCommunityToServer({ name, desc, url });
+}
+
+function postCommunityToServer(item){
+  if(!COMMUNITY_API_URL) return;
+  fetch(COMMUNITY_API_URL, {
+    method: "POST",
+    mode: "no-cors",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify(item)
+  }).catch(()=>{ /* 送信できなくても手元の一覧には残る */ });
+}
+
+function loadCommunityFromServer(){
+  if(!COMMUNITY_API_URL) return;
+  const cbName = "onCommunityData_" + Date.now();
+  window[cbName] = function(items){
+    state.community = items || [];
+    saveState();
+    render();
+    delete window[cbName];
+    script.remove();
+  };
+  const script = document.createElement("script");
+  script.src = COMMUNITY_API_URL + (COMMUNITY_API_URL.includes("?") ? "&" : "?") + "callback=" + cbName;
+  script.onerror = function(){ delete window[cbName]; script.remove(); };
+  document.body.appendChild(script);
 }
 
 function screenShare(){
@@ -648,20 +687,26 @@ function screenShare(){
       <input type="text" id="communityName" placeholder="例：ランダム班分けくん">
       <label class="field-label">一言で説明</label>
       <input type="text" id="communityDesc" placeholder="例：名前を入れると、自動で4人組に分けてくれる">
+      <label class="field-label">公開したURL（発展編までできた人だけでOK）</label>
+      <input type="text" id="communityUrl" placeholder="例：https://script.google.com/macros/.../exec">
       <button class="big-btn" style="margin-top:14px;" onclick="submitCommunity()">みんなのアイデアに送る</button>
     </div>
 
+    <div class="cat-title" style="display:flex; align-items:center; justify-content:space-between;">
+      <span>みんなのアイデア</span>
+      <button class="backbtn" style="min-height:36px; padding:6px 12px; font-size:13px;" onclick="loadCommunityFromServer()">🔄 更新</button>
+    </div>
     ${state.community.length ? `
-      <div class="cat-title">みんなのアイデア</div>
       <div class="community-list">
         ${state.community.slice().reverse().map(c => `
           <div class="community-item">
             <div class="name">${escapeHtml(c.name)}</div>
             <div class="desc">${escapeHtml(c.desc)}</div>
+            ${c.url ? `<div class="desc"><a href="${escapeAttr(c.url)}" target="_blank" rel="noopener">${escapeHtml(c.url)}</a></div>` : ""}
           </div>
         `).join("")}
       </div>
-    ` : ""}
+    ` : `<p class="sub" style="margin-top:0;">まだ誰も送っていません。一番乗りを目指そう。</p>`}
 
     <div class="card" style="margin-top:20px; text-align:center;">
       <div style="font-weight:800; font-size:16px; margin-bottom:10px;">もっと時間がある人は…</div>
