@@ -702,7 +702,7 @@ function screenShare(){
           <div class="community-item">
             <div class="name">${escapeHtml(c.name)}</div>
             <div class="desc">${escapeHtml(c.desc)}</div>
-            ${c.url ? `<div class="desc"><a href="${escapeAttr(c.url)}" target="_blank" rel="noopener">${escapeHtml(c.url)}</a></div>` : ""}
+            ${c.url ? `<div class="desc"><a href="${escapeAttr(c.url)}" target="_blank" rel="noopener">リンク先はこちら →</a></div>` : ""}
           </div>
         `).join("")}
       </div>
