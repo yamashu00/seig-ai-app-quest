@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>座席シャッフルメーカー</title>
+<style>
+  :root{
+    --bg: #1a1023;
+    --surface: #251733;
+    --surface-2: #31203f;
+    --border: #46304f;
+    --text: #fbf5f8;
+    --text-dim: #cbb6cc;
+    --accent1: #ff6f91;
+    --accent2: #ffb648;
+    --accent-grad: linear-gradient(135deg, var(--accent1), var(--accent2));
+    --good: #3fd6a8;
+  }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{ margin:0; background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif; }
+  #app{ max-width:760px; margin:0 auto; padding:24px 20px 60px; }
+  h1{ font-size:clamp(22px,5vw,28px); font-weight:800; margin:4px 0 4px; }
+  p.sub{ color:var(--text-dim); font-size:15px; line-height:1.7; margin:0 0 20px; }
+  .card{ background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:18px; margin-bottom:16px; }
+  label{ display:block; font-weight:700; font-size:14px; margin:0 0 8px; }
+  textarea, input[type=number]{
+    width:100%; background:var(--surface-2); border:1px solid var(--border); color:var(--text);
+    border-radius:12px; padding:12px 14px; font-size:15px; font-family:inherit;
+  }
+  textarea{ min-height:140px; resize:vertical; line-height:1.8; }
+  .row{ display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap; margin-top:14px; }
+  .row .field{ flex:1; min-width:140px; }
+  .btn{
+    display:inline-block; border:none; cursor:pointer; background:var(--accent-grad); color:#fff;
+    font-weight:800; font-size:16px; padding:14px 22px; border-radius:14px; min-height:52px;
+    box-shadow:0 6px 20px rgba(255,111,145,.3);
+  }
+  .btn.secondary{ background:var(--surface-2); color:var(--text); box-shadow:none; border:1px solid var(--border); }
+  .btn:active{ transform:scale(.97); }
+  .tabs{ display:flex; gap:8px; margin:20px 0 12px; }
+  .tab{ flex:1; text-align:center; padding:10px; border-radius:12px; background:var(--surface-2); color:var(--text-dim); font-weight:700; cursor:pointer; border:1px solid var(--border); }
+  .tab.active{ background:var(--accent-grad); color:#fff; border-color:transparent; }
+  .group-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px; }
+  .group-card{ background:var(--surface-2); border:1px solid var(--border); border-radius:12px; padding:12px; }
+  .group-card .gname{ font-size:12px; font-weight:800; color:var(--accent2); letter-spacing:.05em; margin-bottom:6px; }
+  .group-card .member{ font-size:15px; padding:3px 0; }
+  .counter{ font-size:13px; color:var(--text-dim); margin-bottom:10px; }
+  table{ width:100%; border-collapse:collapse; font-size:13px; }
+  th, td{ padding:6px 8px; border-bottom:1px solid var(--border); text-align:center; }
+  th{ color:var(--text-dim); font-weight:700; }
+  td:first-child, th:first-child{ text-align:left; font-weight:700; }
+  .bar-row{ display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+  .bar-label{ width:90px; font-size:13px; flex-shrink:0; }
+  .bar-track{ flex:1; background:var(--surface-2); border-radius:6px; overflow:hidden; height:16px; }
+  .bar-fill{ height:100%; background:var(--accent-grad); }
+  .bar-count{ width:24px; text-align:right; font-size:12px; color:var(--text-dim); flex-shrink:0; }
+  .empty{ color:var(--text-dim); font-size:14px; text-align:center; padding:20px 0; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+const STORAGE_KEY = "seat_shuffle_history_v1";
+
+let state = {
+  names: [],
+  groupCount: 5,
+  current: null,
+  history: load(),
+  tab: "result"
+};
+
+function load(){
+  try{ return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }catch(e){ return []; }
+}
+function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state.history)); }
+
+function shuffleArray(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+function doShuffle(){
+  const raw = document.getElementById("namesInput").value;
+  const names = raw.split("\n").map(s=>s.trim()).filter(Boolean);
+  const groupCount = Math.max(1, parseInt(document.getElementById("groupCount").value, 10) || 1);
+  if(names.length === 0) return;
+
+  const shuffled = shuffleArray(names);
+  const groups = Array.from({length: groupCount}, ()=>[]);
+  shuffled.forEach((name, i) => groups[i % groupCount].push(name));
+
+  state.names = names;
+  state.groupCount = groupCount;
+  state.current = groups;
+  state.history.push({ time: Date.now(), groups });
+  save();
+  render();
+}
+
+function switchTab(tab){ state.tab = tab; render(); }
+
+function renderResult(){
+  if(!state.current){
+    return `<div class="empty">まだシャッフルしていません。名簿を入力して「シャッフルする」を押してください。</div>`;
+  }
+  return `
+    <div class="counter">これまでのシャッフル回数：${state.history.length}回</div>
+    <div class="group-grid">
+      ${state.current.map((members, i) => `
+        <div class="group-card">
+          <div class="gname">GROUP ${i+1}</div>
+          ${members.map(m => `<div class="member">${escapeHtml(m)}</div>`).join("")}
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
+
+function renderDistribution(){
+  if(state.history.length === 0){
+    return `<div class="empty">シャッフルするとここに分布が表示されます。</div>`;
+  }
+  // 生徒 × グループ の割り当て回数を集計
+  const nameSet = new Set();
+  state.history.forEach(h => h.groups.forEach(g => g.forEach(n => nameSet.add(n))));
+  const names = Array.from(nameSet);
+  const maxGroupCount = Math.max(...state.history.map(h => h.groups.length));
+
+  const counts = {}; // name -> [groupIndex]count
+  names.forEach(n => counts[n] = Array(maxGroupCount).fill(0));
+  state.history.forEach(h => {
+    h.groups.forEach((g, gi) => g.forEach(n => { counts[n][gi] = (counts[n][gi]||0) + 1; }));
+  });
+
+  const tableRows = names.map(n => `
+    <tr>
+      <td>${escapeHtml(n)}</td>
+      ${counts[n].map(c => `<td>${c}</td>`).join("")}
+    </tr>
+  `).join("");
+
+  // 全体のグループ割り当て回数分布（公平性の目安）
+  const groupTotals = Array(maxGroupCount).fill(0);
+  state.history.forEach(h => h.groups.forEach((g,gi)=> groupTotals[gi] += g.length));
+  const maxTotal = Math.max(...groupTotals, 1);
+
+  return `
+    <div class="counter">${state.history.length}回のシャッフルをもとに集計しています</div>
+
+    <div style="font-weight:800; font-size:14px; margin-bottom:10px;">グループごとの割り当て人数（全体）</div>
+    ${groupTotals.map((t,i) => `
+      <div class="bar-row">
+        <div class="bar-label">GROUP ${i+1}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${(t/maxTotal*100).toFixed(0)}%"></div></div>
+        <div class="bar-count">${t}</div>
+      </div>
+    `).join("")}
+
+    <div style="font-weight:800; font-size:14px; margin:18px 0 10px;">生徒ごとの内訳（何回・どのグループになったか）</div>
+    <div style="overflow-x:auto;">
+      <table>
+        <tr><th>名前</th>${Array.from({length:maxGroupCount},(_,i)=>`<th>G${i+1}</th>`).join("")}</tr>
+        ${tableRows}
+      </table>
+    </div>
+    <p class="sub" style="margin-top:14px; margin-bottom:0;">
+      回数を重ねるほど、各グループの人数・各生徒の割り当ては均等に近づいていきます。これが「ランダム」の分布です。
+    </p>
+  `;
+}
+
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, s => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[s]));
+}
+
+function render(){
+  const app = document.getElementById("app");
+  app.innerHTML = `
+    <h1>座席シャッフルメーカー</h1>
+    <p class="sub">名簿を入力して、グループ分け・座席決めをランダムに行います。</p>
+
+    <div class="card">
+      <label>名簿（1行に1人）</label>
+      <textarea id="namesInput" placeholder="山田太郎&#10;佐藤花子&#10;...">${state.names.join("\n")}</textarea>
+      <div class="row">
+        <div class="field">
+          <label>グループ数</label>
+          <input type="number" id="groupCount" min="1" value="${state.groupCount}">
+        </div>
+        <button class="btn" onclick="doShuffle()">🎲 シャッフルする</button>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <div class="tab ${state.tab==='result'?'active':''}" onclick="switchTab('result')">結果</div>
+      <div class="tab ${state.tab==='dist'?'active':''}" onclick="switchTab('dist')">📊 これまでの分布</div>
+    </div>
+
+    <div class="card">
+      ${state.tab === 'result' ? renderResult() : renderDistribution()}
+    </div>
+  `;
+}
+
+render();
+</script>
+</body>
+</html>
